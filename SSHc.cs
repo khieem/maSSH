@@ -21,6 +21,8 @@ public class SSHc : IDisposable
 
 		Connect();
 	}
+
+	// public SSHc(Session ss) : this(ss.host, ss.usrn, ss.pswd) {}
 	private void Connect()
 	{
 		client.Connect();
@@ -38,14 +40,16 @@ public class SSHc : IDisposable
 
 		// // Console.WriteLine("sudo");
 		// SwithToRoot("khiemvn", shellStream);
-		Sudo();
+		Sudo();	// chạy sudo interactive lần đầu, cho phép các lần sudo sau chạy non-interactive
 	}
 
    public string Execute(string command)
 	{
+		// root sử dụng phiên non-interactive cho đơn giản
+		// non-root sử dụng ShellStream cho phép gửi mật khẩu khi sudo yêu cầu
+		// có thể chuyển non-root sang non-interactive bằng cách đọc mk sudo từ stdin nhưng không sử dụng vì có thể đọc mk
 		string result = usrn == "root" ? ExecAsRoot(command) : ExecAsUser(command);
-		// client.Disconnect();
-		return result;
+		return result; // result chỉ chứa kết quả gốc, không có định dạng gì ở đây
 	}
 
 	private string ExecAsRoot(string command)
@@ -61,21 +65,21 @@ public class SSHc : IDisposable
 
 	private void Sudo()
 	{
-		_ = shellStream.Expect(new Regex(@"[$>]"));
+		_ = shellStream.Expect(new Regex(@"[$>]"));						// prompt trắng
 		shellStream.WriteLine("sudo -v");
-		string prompt = shellStream.Expect(new Regex(@"([$#>:])"));
+		string prompt = shellStream.Expect(new Regex(@"([$#>:])"));	// có thể là prompt root hoặc yêu cầu mk
 
-		if (prompt.Contains(":"))
+		if (prompt.Contains(":"))												// hỏi mật khẩu (":" ở cuối)		
 		{
 			shellStream.WriteLine(pswd);
-			_ = shellStream.Expect(new Regex(@"[$#>]"));
+			_ = shellStream.Expect(new Regex(@"[$#>]"));					// prompt mới, không bỏ phần này
 		}
 	}
 
 	private void WriteStream(string cmd)
 	{
 		var stream = shellStream;
-			stream.WriteLine(cmd + "; echo kkkkkkkk");
+			stream.WriteLine(cmd + "; echo kkkkkkkk");					// tự đánh dấu kết thúc vì đang sử dụng stream
 			while (stream.Length == 0)
 				Thread.Sleep(500);
 	}
@@ -84,13 +88,13 @@ public class SSHc : IDisposable
 	{
 		StringBuilder result = new StringBuilder();
 		string line;
-		while ((line = shellStream.ReadLine()) != "kkkkkkkk")
+		while ((line = shellStream.ReadLine()) != "kkkkkkkk")			// tìm lại output của lệnh, dừng khi gặp đánh dấu
 				result.AppendLine(line);
 
 		string answer = result.ToString();
 		int index = answer.IndexOf(System.Environment.NewLine);
 		answer = answer[(index + System.Environment.NewLine.Length)..];
-		return "[Out]: " + answer.Trim();
+		return answer.Trim();
 	}
 
 	public void Dispose()
