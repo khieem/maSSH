@@ -1,10 +1,13 @@
 ﻿
 using System.Collections.Concurrent;
+using System.Configuration;
 
 namespace massh
 {
 	class Program
 	{
+		static readonly System.Collections.Specialized.NameValueCollection configs = ConfigurationManager.AppSettings;
+
 		public static void Main(string[] args)
 		{
 			Session ss = new()
