@@ -22,7 +22,7 @@ public class SSHc : IDisposable
 		Connect();
 	}
 
-	// public SSHc(Session ss) : this(ss.host, ss.usrn, ss.pswd) {}
+	public SSHc(Session ss) : this(ss.host, ss.usrn, ss.pswd) {}
 	private void Connect()
 	{
 		client.Connect();
