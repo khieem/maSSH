@@ -1,15 +1,39 @@
 ﻿
 using System.Collections.Concurrent;
 using System.Configuration;
+using System.Diagnostics;
 
 namespace massh
 {
 	class Program
 	{
+		// map chứa cặp key-value cấu hình, đọc từ App.conf
 		static readonly System.Collections.Specialized.NameValueCollection configs = ConfigurationManager.AppSettings;
+
+		static readonly string logto = configs["logto"] ?? "console";
 
 		public static void Main(string[] args)
 		{
+			// đầu ra cho kết quả: logfile và (hoặc) console
+			Trace.Listeners.Clear();
+			TextWriterTraceListener logfile = new TextWriterTraceListener("result.txt");
+			ConsoleTraceListener console = new ConsoleTraceListener(false);
+
+			if (logto == "both")
+			{
+				Trace.Listeners.Add(logfile);
+				Trace.Listeners.Add(console);
+			}
+			else if (logto == "console")
+			{
+				Trace.Listeners.Add(console);
+			}
+			else
+			{
+				Trace.Listeners.Add(logfile);
+			}
+			Trace.AutoFlush = true;
+
 			Session ss = new()
 			{
 				host = "127.0.0.1",
@@ -50,7 +74,7 @@ namespace massh
 
 					foreach (string command in commands) {
 						// Console.WriteLine("[In]: " + command);
-						Console.WriteLine(client.Execute(command));         
+						Trace.WriteLine(client.Execute(command));         
 					}
 				}
 			});
