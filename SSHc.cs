@@ -7,12 +7,14 @@ public class SSHc : IDisposable
 	private readonly SshClient client;
 	private ShellStream? shellStream;
 	private readonly ConnectionInfo connectioninfo;
+	private readonly string name;
 	private readonly string usrn;
 	private readonly string pswd;
 	private readonly string host;
 
-   public SSHc(string host, string usrn, string pswd)
+   public SSHc(string name, string host, string usrn, string pswd)
 	{
+		this.name = name;
 		this.host = host;
 		this.usrn = usrn;
 		this.pswd = pswd;
@@ -22,14 +24,12 @@ public class SSHc : IDisposable
 		Connect();
 	}
 
-	public SSHc(Session ss) : this(ss.host, ss.usrn, ss.pswd) {}
+	public SSHc(Session ss) : this(ss.name, ss.host, ss.usrn, ss.pswd) {}
 	private void Connect()
 	{
 		client.Connect();
-		Console.WriteLine($"Connected to {usrn}@{host}.");
+		// Console.WriteLine($"Connected to {usrn}@{name} ({host}).");
 
-		// string uid = client.RunCommand("id -u").Result;
-		// (uid == "0") ? 
 		if (usrn == "root") return;
 
 		IDictionary<Renci.SshNet.Common.TerminalModes, uint> modes = new Dictionary<Renci.SshNet.Common.TerminalModes, uint>
@@ -38,8 +38,6 @@ public class SSHc : IDisposable
 		};
 		shellStream = client.CreateShellStream("xterm", 80,24, 800, 600, 1024, modes);
 
-		// // Console.WriteLine("sudo");
-		// SwithToRoot("khiemvn", shellStream);
 		Sudo();	// chạy sudo interactive lần đầu, cho phép các lần sudo sau chạy non-interactive
 	}
 
@@ -94,7 +92,7 @@ public class SSHc : IDisposable
 		string answer = result.ToString();
 		int index = answer.IndexOf(System.Environment.NewLine);
 		answer = answer[(index + System.Environment.NewLine.Length)..];
-		return answer.Trim();
+		return answer.Trim() + Environment.NewLine;
 	}
 
 	public void Dispose()
