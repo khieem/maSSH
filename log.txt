@@ -1,0 +1,21 @@
+khiemvn1 | [In] : systemctl status sshd --no-pager
+         | [Out]: [1;32m●[0m sshd.service - OpenSSH server daemon                     Loaded: loaded (/usr/lib/systemd/system/sshd.service; enabled; vendor preset: enabled)
+                     Active: [1;32mactive (running)[0m since Fri 2023-10-06 08:47:48 +07; 1h 49min ago
+                       Docs: man:sshd(8)
+                             man:sshd_config(5)
+                   Main PID: 968 (sshd)
+                     CGroup: /system.slice/sshd.service
+                             └─968 /usr/sbin/sshd -D
+                  
+                  Oct 06 10:28:02 centos.localdomain sshd[3185]: Connection reset by 10.0.2.2 ...]
+                  Oct 06 10:29:33 centos.localdomain sshd[3270]: Accepted password for khiemvn...2
+                  Oct 06 10:30:49 centos.localdomain sshd[3300]: Accepted password for khiemvn...2
+                  Oct 06 10:31:44 centos.localdomain sshd[3331]: Accepted password for khiemvn...2
+                  Oct 06 10:32:23 centos.localdomain sshd[3361]: Accepted password for khiemvn...2
+                  Oct 06 10:33:01 centos.localdomain sshd[3391]: Accepted password for khiemvn...2
+                  Oct 06 10:33:50 centos.localdomain sshd[3421]: Accepted password for khiemvn...2
+                  Oct 06 10:35:12 centos.localdomain sshd[3451]: Accepted password for khiemvn...2
+                  Oct 06 10:36:41 centos.localdomain sshd[3482]: Accepted password for khiemvn...2
+                  Oct 06 10:37:16 centos.localdomain sshd[3513]: Accepted password for khiemvn...2
+                  Hint: Some lines were ellipsized, use -l to show in full.
+                  

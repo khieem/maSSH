@@ -1,6 +1,5 @@
 ﻿using System.Collections.Specialized;
 using System.Configuration;
-using System.Diagnostics;
 
 namespace massh
 {
@@ -27,7 +26,7 @@ namespace massh
 			int gap = maxLength - host.Length;
 
 			// tách result thành nhiều dòng để cách dòng trên tất cả
-			string[] result = res.Split(new [] { '\r', '\n' });
+			string[] result = res.Split(Environment.NewLine);
 
 			// độn thêm chuỗi khoảng trắng để căn đều hostname
 			Console.WriteLine($"{host}{new string(' ', gap)} | [In] : {cmd}");
