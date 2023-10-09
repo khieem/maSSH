@@ -24,7 +24,7 @@ namespace massh
 			// độ dài của hostname dài nhất, dùng để căn đều khi có nhiều hostname
 			int maxLength = orderedServers.Max(s => s.Length);
 			int gap = maxLength - host.Length;
-
+			
 			// tách result thành nhiều dòng để cách dòng trên tất cả
 			string[] result = res.Split(Environment.NewLine);
 
@@ -85,22 +85,31 @@ namespace massh
 				var opts = new ParallelOptions { MaxDegreeOfParallelism = maxConnections };
 				
 				Parallel.ForEach(sessions, opts, ss => {
-					using (var client = new SSHc(ss))
+					try
 					{
-						foreach (string command in commands)
+						using (var client = new SSHc(ss))
 						{
-							string result = client.Execute(command);			// kết quả chạy lệnh
-							WriteLog(ss.name, command, result);					// in kết quả ra màn hình
-
-							if (!outputLock)											// cơ chế lock đơn giản, mong là đủ để ngăn race condition
+							foreach (string command in commands)
 							{
-								outputLock = true;
+								string result = client.Execute(command);			// kết quả chạy lệnh
+								WriteLog(ss.name, command, result);					// in kết quả ra màn hình
 
-								runResults[ss.name] += result;					// thêm kết quả vào map để sắp xếp và in ra file nếu cần
+								if (!outputLock)											// cơ chế lock đơn giản, mong là đủ để ngăn race condition
+								{
+									outputLock = true;
 
-								outputLock = false;
+									runResults[ss.name] += result;					// thêm kết quả vào map để sắp xếp và in ra file nếu cần
+
+									outputLock = false;
+								}
 							}
 						}
+					}
+					catch (Exception e)
+					{
+						// File.WriteAllText("error.txt", "");
+						File.AppendAllText(ss.name + ".error", ss.name);
+						File.WriteAllText(ss.name + ".stacktrace.txt", e.ToString());
 					}
 				});
 

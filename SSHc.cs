@@ -98,6 +98,7 @@ public class SSHc : IDisposable
 	public void Dispose()
 	{
 		// Console.WriteLine("Terminated successfully.");
+		client.Disconnect();
 		GC.SuppressFinalize(this);
 	}
 
