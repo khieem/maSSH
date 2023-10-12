@@ -139,6 +139,16 @@ namespace massh
 			int maxConnections = parallel ? System.Environment.ProcessorCount : 1;
 			var opts = new ParallelOptions { MaxDegreeOfParallelism = maxConnections };
 
+			if (sftp)
+			{
+				Parallel.ForEach(sessions, opts, ss => {
+					using SFTPc client = new SFTPc(ss, fpath);
+					// using FileStream fs = new FileStream(fpath, FileMode.Open);
+					client.UploadSingleFile();
+				});
+				
+			}
+
 			if (ssh)
 			{
 				Parallel.ForEach(sessions, opts, ss => {
