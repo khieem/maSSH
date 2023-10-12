@@ -1,5 +1,6 @@
 ﻿using System.Collections.Specialized;
 using System.Configuration;
+using System.Diagnostics;
 
 namespace massh
 {
@@ -17,8 +18,51 @@ namespace massh
 		// danh sách hostname theo đúng thứ tự cung cấp
 		static readonly List<string> orderedServers = new List<string>();
       static readonly List<Session> sessions = new List<Session>();
-		static readonly string logto = configs["logto"] ?? "console";
 
+		/////////////////// APP.CONFIG ///////////////////
+		static string logto;
+		static bool parallel;
+		static bool sftp;
+		static bool ssh;
+		static string fpath;
+		static string cpath;
+
+		//////////////////// FUNC ////////////////////////
+		static void Preprocess()
+		{
+			logto = configs["logto"] ?? "console";
+			parallel = configs["parallel"] == "true" ? true : false;
+			sftp = configs["sftp"] == "on";
+			ssh = configs["ssh"] == "on";
+			fpath = sftp ? configs["fpath"] : "nofile";
+			cpath = ssh ? configs["cpath"] : "nofile";
+	
+			if (sftp)
+			{
+				if (fpath == "nofile")
+				{
+					throw new FileNotFoundException("Cung cấp đường dẫn tới file cần truyền qua key fpath");
+				}
+			}
+			if (ssh)
+			{
+				if (cpath == "nofile")
+				{
+					throw new FileNotFoundException("Cung cấp đường dẫn tới file chứa lệnh qua key cpath");
+				}
+			}
+
+			// xoá log của phiên trước
+			File.Delete("log.txt");
+			foreach (var f in Directory.EnumerateFiles(".", "*stacktrace.txt"))
+			{
+				File.Delete(f);
+			}
+			foreach (var f in Directory.EnumerateFiles(".", "*error"))
+			{
+				File.Delete(f);
+			}
+		}
 		static void WriteLog(string host, string cmd, string res)
 		{		
 			// độ dài của hostname dài nhất, dùng để căn đều khi có nhiều hostname
@@ -63,55 +107,68 @@ namespace massh
 			}
 		}
 
+		/////////////////// MAIN ////////////////////////
 		public static void Main(string[] args)
 		{
-			// xoá trắng file log của phiên trước
 			try
 			{
-				File.WriteAllText("log.txt", null);
+				Preprocess();
+			}
+			catch (FileNotFoundException e)
+			{
+				Console.WriteLine(e.Message);
+				return;
+			}
+			catch (Exception e)
+			{
+				File.WriteAllText("stacktrace.txt",e.ToString());
+				return;
+			}
 
-				ReadServersList("server.csv");
+			ReadServersList("server.csv");
 
-				// đọc danh sách lệnh từ file
-				List<string> commands = new();
-				using StreamReader sr = new("commands.txt");
-				while (sr.Peek() >= 0)
-				{
-					commands.Add(sr.ReadLine());
-				}
+			// đọc danh sách lệnh từ file
+			List<string> commands = new();
+			using StreamReader sr = new(cpath);
+			while (sr.Peek() >= 0)
+			{
+				commands.Add(sr.ReadLine());
+			}
 
-				// mặc định chạy với tối đa số cpu, có thể cần chỉnh lại
-				int maxConnections = configs["parallel"] == "true" ? System.Environment.ProcessorCount : 1;
-				var opts = new ParallelOptions { MaxDegreeOfParallelism = maxConnections };
-				
+			// mặc định chạy với tối đa số cpu, có thể cần chỉnh lại
+			int maxConnections = parallel ? System.Environment.ProcessorCount : 1;
+			var opts = new ParallelOptions { MaxDegreeOfParallelism = maxConnections };
+
+			if (ssh)
+			{
 				Parallel.ForEach(sessions, opts, ss => {
-					try
+					using (SSHc client = new SSHc(ss))
 					{
-						using (var client = new SSHc(ss))
+						foreach (string command in commands)
 						{
-							foreach (string command in commands)
+							string result = "";
+							try
 							{
-								string result = client.Execute(command);			// kết quả chạy lệnh
+								result = client.Execute(command);			// kết quả chạy lệnh
 								WriteLog(ss.name, command, result);					// in kết quả ra màn hình
+							}
+							catch (Exception e)
+							{
+								File.WriteAllText(ss.name + ".error", null);
+								File.WriteAllText(ss.name + ".stacktrace.txt", e.ToString());
+							}
+							if (!outputLock)											// cơ chế lock đơn giản, mong là đủ để ngăn race condition
+							{
+								outputLock = true;
 
-								if (!outputLock)											// cơ chế lock đơn giản, mong là đủ để ngăn race condition
-								{
-									outputLock = true;
+								runResults[ss.name] += result;					// thêm kết quả vào map để sắp xếp và in ra file nếu cần
 
-									runResults[ss.name] += result;					// thêm kết quả vào map để sắp xếp và in ra file nếu cần
-
-									outputLock = false;
-								}
+								outputLock = false;
 							}
 						}
 					}
-					catch (Exception e)
-					{
-						// File.WriteAllText("error.txt", "");
-						File.AppendAllText(ss.name + ".error", ss.name);
-						File.WriteAllText(ss.name + ".stacktrace.txt", e.ToString());
-					}
 				});
+			}
 
 			if (logto != "console")
 			{
@@ -126,13 +183,6 @@ namespace massh
 					}
 				}
          }
-
-			}
-			catch (System.Exception e)
-			{
-				File.WriteAllText("stacktrace.txt", e.ToString());
-				throw;
-			}
 		}
 	}
 }

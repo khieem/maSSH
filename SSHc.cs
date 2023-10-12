@@ -1,33 +1,32 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Renci.SshNet;
+using Renci.SshNet.Common;
 
-public class SSHc : IDisposable
+public class SSHc : Sc
 {
 	private readonly SshClient client;
 	private ShellStream? shellStream;
-	private readonly ConnectionInfo connectioninfo;
-	private readonly string name;
-	private readonly string usrn;
-	private readonly string pswd;
-	private readonly string host;
 
-   public SSHc(string name, string host, string usrn, string pswd)
+
+   public SSHc(string name, string host, string usrn, string pswd) : base(name, host, usrn, pswd)
 	{
-		this.name = name;
-		this.host = host;
-		this.usrn = usrn;
-		this.pswd = pswd;
-		connectioninfo = new ConnectionInfo(host, usrn, new PasswordAuthenticationMethod(usrn, pswd));
 		client = new SshClient(connectioninfo);
 
 		Connect();
 	}
 
 	public SSHc(Session ss) : this(ss.name, ss.host, ss.usrn, ss.pswd) {}
-	private void Connect()
+	public new void Connect()
 	{
-		client.Connect();
+		try
+		{
+			client.Connect();
+		}
+		catch (SshAuthenticationException)
+		{
+			File.WriteAllText(host + "wrongpass", "");
+		}
 		// Console.WriteLine($"Connected to {usrn}@{name} ({host}).");
 
 		if (usrn == "root") return;
@@ -95,11 +94,10 @@ public class SSHc : IDisposable
 		return answer.Trim() + Environment.NewLine;
 	}
 
-	public void Dispose()
+	public new void Dispose()
 	{
-		// Console.WriteLine("Terminated successfully.");
 		client.Disconnect();
-		GC.SuppressFinalize(this);
+		base.Dispose();
 	}
 
 	internal void Exec(string command)
