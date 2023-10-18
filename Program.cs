@@ -1,6 +1,5 @@
 ﻿using System.Collections.Specialized;
-using System.Configuration;
-using System.Diagnostics;
+using Salaros.Configuration;
 
 namespace massh
 {
@@ -10,14 +9,17 @@ namespace massh
 		static volatile bool outputLock = false;
 
 		// map chứa cặp key-value cấu hình, đọc từ App.conf
-		static readonly System.Collections.Specialized.NameValueCollection configs = ConfigurationManager.AppSettings;
-
+		// static readonly System.Collections.Specialized.NameValueCollection configs = ConfigurationManager.AppSettings;
+		const string configPath = @"App.config";
+		static ConfigParser configParser;
+		
 		// key: hostname, value: kết quả
 		static volatile NameValueCollection runResults = new NameValueCollection();
 
 		// danh sách hostname theo đúng thứ tự cung cấp
 		static readonly List<string> orderedServers = new List<string>();
       static readonly List<Session> sessions = new List<Session>();
+		const string HEADER = @"HEADER";
 
 		/////////////////// APP.CONFIG ///////////////////
 		static string logto;
@@ -30,12 +32,22 @@ namespace massh
 		//////////////////// FUNC ////////////////////////
 		static void Preprocess()
 		{
-			logto = configs["logto"] ?? "console";
-			parallel = configs["parallel"] == "true" ? true : false;
-			sftp = configs["sftp"] == "on";
-			ssh = configs["ssh"] == "on";
-			fpath = sftp ? configs["fpath"] : "nofile";
-			cpath = ssh ? configs["cpath"] : "nofile";
+			string rawConfig = File.ReadAllText(configPath);
+			string config = HEADER + Environment.NewLine + rawConfig;
+
+			ConfigParserSettings settings = new ConfigParserSettings
+			{
+				CommentCharacters = new string[] {"#"},
+				MultiLineValues = MultiLineValues.Simple | MultiLineValues.QuoteDelimitedValues
+			};
+			configParser = new ConfigParser(config, settings);
+
+			logto 	= configParser.GetValue(HEADER, "logto"	);
+			parallel = configParser.GetValue(HEADER, "parallel") == "true";
+			sftp 		= configParser.GetValue(HEADER, "sftp"		) == "on";
+			ssh 		= configParser.GetValue(HEADER, "ssh"		) == "on";
+			fpath 	= configParser.GetValue(HEADER, "fpath", "nofile");
+			cpath 	= configParser.GetValue(HEADER, "cpath", "nofile");
 	
 			if (sftp)
 			{
