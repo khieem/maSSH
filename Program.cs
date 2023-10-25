@@ -10,7 +10,7 @@ namespace massh
 
 		// map chứa cặp key-value cấu hình, đọc từ App.conf
 		// static readonly System.Collections.Specialized.NameValueCollection configs = ConfigurationManager.AppSettings;
-		const string configPath = @"App.config";
+		const string configPath = @"massh.conf";
 		static ConfigParser configParser;
 		
 		// key: hostname, value: kết quả
@@ -22,18 +22,53 @@ namespace massh
 		const string HEADER = @"HEADER";
 
 		/////////////////// APP.CONFIG ///////////////////
-		static string logto;
-		static bool parallel;
-		static bool sftp;
-		static bool ssh;
+		static string logto = "console";
+		static bool parallel = false;
+		static bool sftp = false;
+		static bool ssh = false;
 		static string fpath;
-		static string cpath;
+		static string cpath = "commands.txt";
 
 		//////////////////// FUNC ////////////////////////
 		static void Preprocess()
 		{
-			string rawConfig = File.ReadAllText(configPath);
-			string config = HEADER + Environment.NewLine + rawConfig;
+			string rawConfig = "";
+			try
+			{
+				rawConfig = File.ReadAllText(configPath);
+			}
+			catch (FileNotFoundException)
+			{
+				File.WriteAllText("massh.conf", @"# logto = [console|file|both]
+#     console: chỉ in kết quả ra màn hình
+#     file   : chỉ in kết quả ra log.txt
+#     both   : cả 2
+logto = console
+
+# parallel = [on|true|enable] | [off|false|disable]
+# kết nối song song giúp giảm thời gian chạy
+# tuy nhiên thứ tự kết quả in ra màn hình xáo trộn
+# kết quả lưu vào file không ảnh hưởng
+# hiệu quả với sftp, ít hiệu quả hơn với ssh
+parallel = off
+
+# sftp = [on|true|enable] | [off|false|disable]
+sftp = off
+
+# fpath = <filepath>
+# đường dẫn tới file cần truyền, không hỗ trợ thư mục
+fpath = test.test
+
+# ssh = [on|true|enable] | [off|false|disable]
+ssh = off
+
+# cpath = <commandpath>
+# đường dẫn tới file chứa lệnh
+# các lệnh nên nằm trên cùng 1 dòng và cách nhau bởi ';'
+cpath = commands.txt");
+				Console.WriteLine("massh.conf created.");
+			}
+			string config = "[HEADER]" + Environment.NewLine + rawConfig;
 
 			ConfigParserSettings settings = new ConfigParserSettings
 			{
@@ -42,7 +77,7 @@ namespace massh
 			};
 			configParser = new ConfigParser(config, settings);
 
-			logto 	= configParser.GetValue(HEADER, "logto"	);
+			logto 	= configParser.GetValue(HEADER, "logto", logto);
 			parallel = configParser.GetValue(HEADER, "parallel") == "true";
 			sftp 		= configParser.GetValue(HEADER, "sftp"		) == "on";
 			ssh 		= configParser.GetValue(HEADER, "ssh"		) == "on";
@@ -190,21 +225,22 @@ namespace massh
 						}
 					}
 				});
-			}
 
-			if (logto != "console")
-			{
-				StreamWriter o = new StreamWriter("log.txt");
-				o.AutoFlush = true;
-				Console.SetOut(o);
-				foreach (string s in orderedServers)
+				if (logto != "console")
 				{
-					foreach (var cmd in commands)
+					StreamWriter o = new StreamWriter("log.txt");
+					o.AutoFlush = true;
+					Console.SetOut(o);
+					foreach (string s in orderedServers)
 					{
-						WriteLog(s, cmd, runResults[s]);
+						foreach (var cmd in commands)
+						{
+							WriteLog(s, cmd, runResults[s]);
+						}
 					}
 				}
-         }
+			}
+			Console.ReadKey();
 		}
 	}
 }
