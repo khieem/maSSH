@@ -2,6 +2,7 @@ using Renci.SshNet;
 
 public class Sc : IDisposable
 {
+   protected bool passwordDenied;
    protected readonly string name;
 	protected readonly string usrn;
 	protected readonly string pswd;

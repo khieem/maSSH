@@ -1,4 +1,5 @@
 using Renci.SshNet;
+using Renci.SshNet.Common;
 
 public class SFTPc : Sc
 {
@@ -13,7 +14,17 @@ public class SFTPc : Sc
       this.fpath = fpath;
       fs = new FileStream(fpath, FileMode.Open, FileAccess.Read);
       client = new SftpClient(connectioninfo);
-      client.Connect();
+
+      try
+		{
+			client.Connect();
+		}
+		catch (SshAuthenticationException)
+		{
+			passwordDenied = true;
+			return;
+		}
+      // client.Connect();
    }
 
    public SFTPc(Session ss, string fpath) : this(ss.name, ss.host, ss.usrn, ss.pswd, fpath) {}
@@ -24,9 +35,16 @@ public class SFTPc : Sc
 
    public void UploadSingleFile()
    {
-      Console.WriteLine(name + " start");
-      client.UploadFile(fs, fpath);
-      Console.WriteLine(name + " completed!");
+      if (passwordDenied)
+      {
+         Console.WriteLine(name + " NOT completed. PASSWORD DENIED!");
+      }
+      else
+      {
+         // Console.WriteLine(name + " start");
+         client.UploadFile(fs, fpath);
+         Console.WriteLine(name + " completed.");
+      }
       fs.Close();
    }
 

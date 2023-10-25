@@ -1,4 +1,5 @@
 ﻿using System.Collections.Specialized;
+using Renci.SshNet.Common;
 using Salaros.Configuration;
 
 namespace massh
@@ -181,6 +182,7 @@ cpath = commands.txt");
 			{
 				commands.Add(sr.ReadLine());
 			}
+			sr.Close();
 
 			// mặc định chạy với tối đa số cpu, có thể cần chỉnh lại
 			int maxConnections = parallel ? System.Environment.ProcessorCount : 1;
@@ -211,7 +213,6 @@ cpath = commands.txt");
 							}
 							catch (Exception e)
 							{
-								File.WriteAllText(ss.name + ".error", null);
 								File.WriteAllText(ss.name + ".stacktrace.txt", e.ToString());
 							}
 							if (!outputLock)											// cơ chế lock đơn giản, mong là đủ để ngăn race condition

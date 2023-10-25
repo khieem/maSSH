@@ -25,7 +25,8 @@ public class SSHc : Sc
 		}
 		catch (SshAuthenticationException)
 		{
-			File.WriteAllText(host + "wrongpass", "");
+			passwordDenied = true;
+			return;
 		}
 		// Console.WriteLine($"Connected to {usrn}@{name} ({host}).");
 
@@ -45,8 +46,18 @@ public class SSHc : Sc
 		// root sử dụng phiên non-interactive cho đơn giản
 		// non-root sử dụng ShellStream cho phép gửi mật khẩu khi sudo yêu cầu
 		// có thể chuyển non-root sang non-interactive bằng cách đọc mk sudo từ stdin nhưng không sử dụng vì có thể đọc mk
-		string result = usrn == "root" ? ExecAsRoot(command) : ExecAsUser(command);
-		return result; // result chỉ chứa kết quả gốc, không có định dạng gì ở đây
+		// string result = "PASSWORD_DENIED";
+		if (!passwordDenied)
+		{
+			return usrn == "root" ? ExecAsRoot(command) : ExecAsUser(command);
+		}
+		else
+		{
+			File.WriteAllText(name + ".cannotconnect.error", null);
+			return "PASSWORD_DENIED";
+			// throw new SshConnectionException();
+		}
+		// return result; // result chỉ chứa kết quả gốc, không có định dạng gì ở đây
 	}
 
 	private string ExecAsRoot(string command)
