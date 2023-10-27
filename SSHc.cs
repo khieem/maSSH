@@ -74,7 +74,7 @@ public class SSHc : Sc
 	private void Sudo()
 	{
 		_ = shellStream.Expect(new Regex(@"[$>]"));						// prompt trắng
-		shellStream.WriteLine("sudo -v");
+		shellStream.WriteLine("unset HISTFILE; sudo -v");
 		string prompt = shellStream.Expect(new Regex(@"([$#>:])"));	// có thể là prompt root hoặc yêu cầu mk
 
 		if (prompt.Contains(":"))												// hỏi mật khẩu (":" ở cuối)		
