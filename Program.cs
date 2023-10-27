@@ -40,7 +40,9 @@ namespace massh
 			}
 			catch (FileNotFoundException)
 			{
-				File.WriteAllText("massh.conf", @"# logto = [console|file|both]
+				File.WriteAllText("massh.conf", @"# sửa đổi, đóng góp: https://github.com/khieem/maSSH
+#
+# logto = [console|file|both]
 #     console: chỉ in kết quả ra màn hình
 #     file   : chỉ in kết quả ra log.txt
 #     both   : cả 2
