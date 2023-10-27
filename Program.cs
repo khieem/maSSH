@@ -230,6 +230,7 @@ cpath = commands.txt");
 				if (logto != "console")
 				{
 					StreamWriter o = new StreamWriter("log.txt");
+					TextWriter stdOut = Console.Out;			// store old stdout before binding to logfile 
 					o.AutoFlush = true;
 					Console.SetOut(o);
 					foreach (string s in orderedServers)
@@ -239,8 +240,12 @@ cpath = commands.txt");
 							WriteLog(s, cmd, runResults[s]);
 						}
 					}
+					Console.SetOut(stdOut);						// restore stdout after writing 
 				}
 			}
+			Console.WriteLine();
+			Console.WriteLine("hoàn tất. nhấn phím bất kỳ để thoát.");
+			Console.Write("> ");
 			Console.ReadKey();
 		}
 	}
